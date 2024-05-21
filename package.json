@@ -1,0 +1,33 @@
+{
+	"name": "dabadee",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"watch-ts": "pnpm exec tsc --watch",
+		"watch-esbuild": "pnpm esbuild --watch",
+		"esbuild": "pnpm exec esbuild --outfile=out/ui.js --format=esm --bundle --sourcemap --jsx=automatic --jsx-import-source=preact src/ui/ui.tsx",
+		"server": "node out/server/server.js",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"private": true,
+	"devDependencies": {
+		"@types/node": "^20.12.12",
+		"@types/ws": "^8.5.10",
+		"@typescript-eslint/eslint-plugin": "^7.9.0",
+		"@typescript-eslint/parser": "^7.9.0",
+		"esbuild": "^0.21.3",
+		"eslint": "^8.57.0",
+		"typescript": "^5.4.5"
+	},
+	"dependencies": {
+		"@preact/signals": "^1.2.3",
+		"@types/mime": "^4.0.0",
+		"bufferutil": "^4.0.8",
+		"mime": "^4.0.3",
+		"preact": "^10.22.0",
+		"preact-render-to-string": "^6.4.2",
+		"ws": "^8.17.0"
+	}
+}
