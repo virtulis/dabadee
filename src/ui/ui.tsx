@@ -1,7 +1,8 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { maybe, Maybe, Swatch, WorkState } from '../types.js';
 import { useComputed, useSignal } from '@preact/signals';
 import { render } from 'preact';
+import chroma from 'chroma-js';
 
 const columnCount = 23;
 const rowsPerPage = 31;
@@ -17,6 +18,7 @@ export const App = (_props: {}) => {
 	const error = useSignal<Maybe<string>>(null);
 	const socket = useSignal<Maybe<WebSocket>>(null);
 	const state = useSignal<Maybe<WorkState>>(null);
+	const bell = useRef<HTMLAudioElement>(null);
 	
 	useEffect(() => {
 		const ws = new WebSocket('/');
@@ -27,6 +29,7 @@ export const App = (_props: {}) => {
 		ws.onmessage = ev => {
 			const json = JSON.parse(ev.data);
 			state.value = { ...state.value, ...json };
+			bell.current?.play();
 		};
 		socket.value = ws;
 	}, []);
@@ -40,14 +43,19 @@ export const App = (_props: {}) => {
 		return rows;
 	})));
 	
-	function Square({ i, x, y, swatch, current }: {
+	function Square({ i, x, y, swatch }: {
 		i: number;
 		x: number;
 		y: number;
 		swatch: Swatch;
-		current: boolean;
 	}) {
-		return <g onClick={() => socket.value?.send(JSON.stringify({
+		const resHex = useMemo(() => {
+			const lab =swatch.read?.lab;
+			if (!lab) return null;
+			lab[0] = (lab[0] - 16) * 1.35;
+			return chroma.lab(...lab).hex();
+		}, [swatch.read?.lab.join(',')]);
+		return useMemo(() => <g onClick={() => socket.value?.send(JSON.stringify({
 			current: i,
 		}))}>
 			<rect
@@ -59,18 +67,20 @@ export const App = (_props: {}) => {
 				stroke={`rgb(${swatch.rgb.join(',')})`}
 				stroke-width={0.5}
 			/>
-			{swatch.read && <circle
+			{resHex && <circle
 				cx={x + side / 2}
 				cy={y + side / 2}
 				r={side * 0.3}
-				fill={`rgb(${swatch.read.rgb.join(',')})`}
+				fill={resHex}
 			/>}
-		</g>;
+		</g>, [i, resHex]);
 	}
 	
 	if (!pages.value || !socket.value) return <div>Something went wrong and/or please wait. <strong>{error}</strong></div>;
 	
 	return <div>
+	
+		<audio src="/static/bell.mp3" ref={bell} />
 		
 		{pages.value.map((rows, page) => <svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -80,11 +90,11 @@ export const App = (_props: {}) => {
 			{rows.map((row, y) => row.map((swatch, x) => {
 				const i = perPage * page + y * columnCount + x;
 				return <Square
+					key={i}
 					i={i}
 					x={margin + side * x}
 					y={margin + side * y}
 					swatch={swatch}
-					current={state.value?.current == i}
 				/>;
 			}))}
 			

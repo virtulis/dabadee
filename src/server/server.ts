@@ -2,7 +2,7 @@ import { readFile } from 'fs/promises';
 import * as http from 'node:http';
 import { isSome, SocketMessage, WorkState } from '../types.js';
 import ws, { WebSocketServer } from 'ws';
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import mime from 'mime';
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
@@ -23,6 +23,10 @@ const server = http.createServer((req, res) => {
 	const url = new URL(req.url!, 'http://localhost');
 	
 	const serve = (file: string, ct?: string) => {
+		if (!existsSync(file)) {
+			res.statusCode = 404;
+			res.end('Nope');
+		}
 		res.setHeader('Content-Type', ct ?? mime.getType(file)!);
 		createReadStream(file).pipe(res);
 	};
@@ -32,6 +36,9 @@ const server = http.createServer((req, res) => {
 	}
 	if (url.pathname.startsWith('/ui.js')) {
 		return serve(`out${url.pathname}`);
+	}
+	if (url.pathname.startsWith('/static/')) {
+		return serve(url.pathname.slice(1));
 	}
 	
 	res.statusCode = 404;
