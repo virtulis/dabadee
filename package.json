@@ -1,6 +1,6 @@
 {
 	"name": "dabadee",
-	"version": "1.0.0",
+	"version": "0.1.0",
 	"description": "",
 	"main": "index.js",
 	"type": "module",
@@ -8,8 +8,8 @@
 		"watch-ts": "pnpm exec tsc --watch",
 		"watch-esbuild": "pnpm esbuild --watch",
 		"esbuild": "pnpm exec esbuild --outfile=out/ui.js --format=esm --bundle --sourcemap --jsx=automatic --jsx-import-source=preact src/ui/ui.tsx",
-		"server": "node out/server/server.js",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"build": "pnpm exec tsc && pnpm esbuild",
+		"server": "node --enable-source-maps -- out/server/server.js"
 	},
 	"private": true,
 	"devDependencies": {
@@ -24,9 +24,9 @@
 	},
 	"dependencies": {
 		"@preact/signals": "^1.2.3",
-		"@types/mime": "^4.0.0",
 		"bufferutil": "^4.0.8",
 		"chroma-js": "^2.4.2",
+		"json5": "^2.2.3",
 		"mime": "^4.0.3",
 		"preact": "^10.22.0",
 		"preact-render-to-string": "^6.4.2",

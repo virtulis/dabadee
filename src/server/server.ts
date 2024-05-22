@@ -1,19 +1,22 @@
 import { readFile } from 'fs/promises';
 import * as http from 'node:http';
-import { isSome, SocketMessage, WorkState } from '../types.js';
+import { Config, isSome, SocketMessage, Swatch, WorkState } from '../types.js';
 import ws, { WebSocketServer } from 'ws';
-import { createReadStream, existsSync } from 'node:fs';
 import mime from 'mime';
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
-import { writeFile } from 'node:fs/promises';
+import { open, writeFile } from 'node:fs/promises';
+import json5 from 'json5';
+
+const { parse } = json5;
+const config: Config = await readFile('data/config.json5', 'utf-8').then(parse);
+const swatches: Swatch[] = await readFile(config.swatchesFile, 'utf8').then(parse);
 
 const state: WorkState = {
-	swatches: JSON.parse(await readFile('data/swatches.json', 'utf8')),
-	current: 0,
+	config,
+	swatches,
+	current: Math.max(0, swatches.findIndex(s => !s.read)),
 };
-
-state.current = Math.max(0, state.swatches.findIndex(s => !s.read));
 
 const server = http.createServer((req, res) => {
 	
@@ -22,14 +25,14 @@ const server = http.createServer((req, res) => {
 	console.log(req.url);
 	const url = new URL(req.url!, 'http://localhost');
 	
-	const serve = (file: string, ct?: string) => {
-		if (!existsSync(file)) {
-			res.statusCode = 404;
-			res.end('Nope');
-		}
+	const serve = (file: string, ct?: string) => open(file).then(fh => {
 		res.setHeader('Content-Type', ct ?? mime.getType(file)!);
-		createReadStream(file).pipe(res);
-	};
+		fh.createReadStream().pipe(res);
+	}).catch(e => {
+		console.error(e);
+		res.statusCode = 404;
+		res.end('Nope');
+	});
 	
 	if (url.pathname == '/') {
 		return serve('src/ui/index.html', 'text/html; charset=utf-8');
@@ -48,10 +51,7 @@ const server = http.createServer((req, res) => {
 
 const sockets = new Set<ws.WebSocket>();
 
-const wss = new WebSocketServer({
-	server,
-	
-});
+const wss = new WebSocketServer({ server });
 
 function broadcast() {
 	const json = JSON.stringify(state);
@@ -82,9 +82,9 @@ wss.on('connection', function connection(ws) {
 	
 });
 
-server.listen(1752);
+server.listen(config.port, config.host);
 
-const reader = spawn('bluecolor', ['--get-status', '--format', 'json'], {
+const reader = spawn(config.bluecolorPath, config.bluecolorArgs, {
 	stdio: [null, 'pipe', 'inherit'],
 });
 const rl = createInterface({ input: reader.stdout });
@@ -92,12 +92,19 @@ for await (const line of rl) {
 	console.log(line);
 	const res = JSON.parse(line);
 	if (res.scan) {
-		state.swatches[state.current]!.read = {
+		let swatch = swatches[state.current];
+		if (!swatch) {
+			swatch = swatches[state.current] = {
+				rgb: res.scan.rgb,
+				cmyk: res.scan.cmyk,
+			};
+		}
+		swatch.read = {
 			rgb: res.scan.rgb,
 			lab: res.scan.lab,
 		};
 		state.current++;
 		broadcast();
-		await writeFile('data/swatches.json', JSON.stringify(state.swatches, null, '\t'));
+		await writeFile(config.swatchesFile, JSON.stringify(swatches, null, '\t'));
 	}
 }

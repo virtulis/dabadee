@@ -40,7 +40,23 @@ export interface Swatch {
 	}>;
 }
 
+export interface Config {
+	
+	port: number;
+	host: string;
+	
+	columnCount: number;
+	rowsPerPage: number;
+	
+	swatchesFile: string;
+	
+	bluecolorPath: string;
+	bluecolorArgs: string[],
+	
+}
+
 export interface WorkState {
+	config: Config;
 	swatches: Swatch[];
 	current: number;
 }
