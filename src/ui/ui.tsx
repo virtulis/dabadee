@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'preact/hooks';
-import { maybe, Maybe, Swatch, WorkState } from '../types.js';
+import { isNone, maybe, Maybe, Swatch, WorkState } from '../types.js';
 import { useComputed, useSignal } from '@preact/signals';
 import { render } from 'preact';
 import chroma from 'chroma-js';
@@ -119,6 +119,12 @@ export const App = (_props: {}) => {
 		<div class="commands">
 			{['disconnect', 'reconnect', 'calibrate', 'scan', 'status'].map(cmd => <button
 				onClick={() => send([cmd])}
+				disabled={
+					isNone(s.connected)
+					|| (cmd == 'disconnect' && !s.connected)
+					|| (cmd == 'reconnect' && (s.connected || s.connecting))
+					|| false
+				}
 			>{cmd}</button>)}
 			<div>{s.connected ? 'connected' : s.connecting ? 'connecting' : s.connected == false ? 'disconnected' : 'down'}</div>
 			<div>{s.device_address}</div>
