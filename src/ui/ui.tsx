@@ -46,6 +46,9 @@ export const App = (_props: {}) => {
 	const socket = useSignal<Maybe<WebSocket>>(null);
 	const state = useSignal<Maybe<WorkState>>(null);
 	const bell = useRef<HTMLAudioElement>(null);
+	const bellOn = useSignal(true);
+	
+	const log = useSignal<[number, string][]>([]);
 	
 	const reconnect = () => {
 		const ws = new WebSocket('/');
@@ -57,14 +60,29 @@ export const App = (_props: {}) => {
 			setTimeout(reconnect, 1000);
 		};
 		ws.onmessage = ev => {
-			const json = JSON.parse(ev.data);
-			state.value = { ...state.peek(), ...json };
-			bell.current?.play();
+			
+			const json: [string, ...any[]] = JSON.parse(ev.data);
+			const [cmd, ...args] = json;
+			console.log(json);
+
+			if (cmd != 'state') {
+				log.value = [
+					...log.value.slice(-30),
+					[Date.now(), JSON.stringify(json)],
+				];
+			}
+			
+			if (cmd == 'state') {
+				state.value = { ...state.peek(), ...args[0] };
+			}
+			else if (cmd == 'scan') {
+				if (bellOn.peek()) bell.current?.play().catch(console.error);
+			}
+			
 		};
 		socket.value = ws;
 	};
 	useEffect(reconnect, []);
-	
 	
 	const pages = useComputed(() => {
 		const s = state.value;
@@ -84,14 +102,33 @@ export const App = (_props: {}) => {
 	const s = state.value;
 	if (!s || !pages.value || !socket.value) return <div>Something went wrong and/or please wait. <strong>{error}</strong></div>;
 	
-	const setCurrent = (current: number) => socket.peek()?.send(JSON.stringify({ current }));
+	const send = (msg: any) => socket.peek()?.send(JSON.stringify(msg));
+	const setCurrent = (idx: number) => {
+		const prev = state.peek()?.current;
+		if (idx !== prev) send(['set_current', idx]);
+		else send(['scan']);
+	};
 	const { columnCount, rowsPerPage } = s.config;
 	const perPage = columnCount * rowsPerPage;
 	const length = s.swatches.length;
 	
-	return <div>
+	return <div class="app">
 	
 		<audio src="/static/bell.mp3" ref={bell} />
+		
+		{maybe(state.value, s => <div class="commands">
+			{['disconnect', 'reconnect', 'calibrate', 'scan', 'status'].map(cmd => <button
+				onClick={() => send([cmd])}
+			>{cmd}</button>)}
+			<div>{s.connected ? 'connected' : s.connecting ? 'connecting' : s.connected == false ? 'disconnected' : 'down'}</div>
+			<div>{s.device_address}</div>
+			<div>{s.device_name}</div>
+			<div>{maybe(s.power_level, n => (n / 10).toFixed(1) + 'V')}</div>
+			<label>
+				<input type="checkbox" checked={bellOn.value} onChange={e => bellOn.value = e.currentTarget.checked} />
+				bell
+			</label>
+		</div>)}
 		
 		{pages.value.map((rows, page) => <svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -140,6 +177,12 @@ export const App = (_props: {}) => {
 			})}
 	
 		</svg>)}
+		
+		<div class="log">
+			{log.value.map(([at, msg]) => <div key={at}>
+				{msg}
+			</div>)}
+		</div>
 		
 	</div>;
 			

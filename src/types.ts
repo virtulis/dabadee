@@ -50,8 +50,8 @@ export interface Config {
 	
 	swatchesFile: string;
 	
-	bluecolorPath: string;
-	bluecolorArgs: string[],
+	bluecolorHost: string;
+	bluecolorPort: number,
 	
 }
 
@@ -59,15 +59,12 @@ export interface WorkState {
 	config: Config;
 	swatches: Swatch[];
 	current: number;
-}
-
-export interface SocketMessage extends Partial<WorkState> {
-	// idk
-	read?: {
-		index: number;
-		lab: ColorTriple;
-		rgb: ColorTriple;
-	};
+	connected?: Maybe<boolean>;
+	connecting?: Maybe<boolean>;
+	device_address?: Maybe<string>;
+	device_name?: Maybe<string>;
+	power_level?: Maybe<number>;
+	calibrated?: Maybe<string>;
 }
 
 type MaybeCB<A, B> = (it: Some<A>) => B;
