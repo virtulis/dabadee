@@ -116,7 +116,7 @@ export const App = (_props: {}) => {
 	
 		<audio src="/static/bell.mp3" ref={bell} />
 		
-		{maybe(state.value, s => <div class="commands">
+		<div class="commands">
 			{['disconnect', 'reconnect', 'calibrate', 'scan', 'status'].map(cmd => <button
 				onClick={() => send([cmd])}
 			>{cmd}</button>)}
@@ -128,11 +128,12 @@ export const App = (_props: {}) => {
 				<input type="checkbox" checked={bellOn.value} onChange={e => bellOn.value = e.currentTarget.checked} />
 				bell
 			</label>
-		</div>)}
+		</div>
 		
 		{pages.value.map((rows, page) => <svg
 			xmlns="http://www.w3.org/2000/svg"
 			viewBox={`${-margin} ${-margin} ${margin * 2 + s.config.columnCount * side} ${margin * 2 + Math.max(rows.length, 2) * side}`}
+			style={{ maxWidth: (150 * columnCount) + 'px' }}
 		>
 		
 			{rows.map((row, y) => row.map((swatch, x) => {
