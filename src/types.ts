@@ -50,21 +50,28 @@ export interface Config {
 	
 	swatchesFile: string;
 	
+	blackL: number;
+	whiteL: number;
+	
 	bluecolorHost: string;
 	bluecolorPort: number,
 	
 }
 
 export interface WorkState {
+
 	config: Config;
+	
 	swatches: Swatch[];
 	current: number;
+	
 	connected?: Maybe<boolean>;
 	connecting?: Maybe<boolean>;
 	device_address?: Maybe<string>;
 	device_name?: Maybe<string>;
 	power_level?: Maybe<number>;
 	calibrated?: Maybe<string>;
+	
 }
 
 type MaybeCB<A, B> = (it: Some<A>) => B;

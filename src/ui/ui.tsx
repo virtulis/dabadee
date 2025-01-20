@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'preact/hooks';
-import { isNone, maybe, Maybe, Swatch, WorkState } from '../types.js';
+import { Config, isNone, maybe, Maybe, Swatch, WorkState } from '../types.js';
 import { useComputed, useSignal } from '@preact/signals';
 import { render } from 'preact';
 import chroma from 'chroma-js';
@@ -7,18 +7,20 @@ import chroma from 'chroma-js';
 const side = 56;
 const margin = side * 0.75;
 
-const Square = ({ i, x, y, swatch, onClick }: {
+const Square = ({ i, x, y, swatch, onClick, config }: {
 	i: number;
 	x: number;
 	y: number;
 	swatch: Swatch;
 	onClick?: () => void;
+	config: Config;
 }) => {
 	const resHex = useMemo(() => {
 		const lab =swatch.read?.lab;
 		if (!lab) return null;
-		lab[0] = (lab[0] - 16) * 1.35;
-		return chroma.lab(...lab).hex();
+		const m = (100 / (config.whiteL - config.blackL));
+		const l = (lab[0] - config.blackL) * m;
+		return chroma.lab(l, lab[1] * m, lab[2] * m).hex();
 	}, [swatch.read?.lab.join(',')]);
 	return useMemo(() => <g onClick={onClick}>
 		<rect
@@ -139,20 +141,26 @@ export const App = (_props: {}) => {
 		{pages.value.map((rows, page) => <svg
 			xmlns="http://www.w3.org/2000/svg"
 			viewBox={`${-margin} ${-margin} ${margin * 2 + s.config.columnCount * side} ${margin * 2 + Math.max(rows.length, 2) * side}`}
-			style={{ maxWidth: (150 * columnCount) + 'px' }}
+			style={{ maxWidth: (120 * columnCount) + 'px' }}
 		>
 		
-			{rows.map((row, y) => row.map((swatch, x) => {
-				const i = perPage * page + y * columnCount + x;
-				return <Square
-					key={i}
-					i={i}
-					y={side * y}
-					x={side * x}
-					swatch={swatch}
-					onClick={() => setCurrent(i)}
-				/>;
-			}))}
+			{rows.map((row, y) => <>
+				<text y={side * 0.5 + side * y} x={-side * 0.25} font-size="12px" text-anchor="end">
+					{page * rowsPerPage + y + 1}
+				</text>
+				{row.map((swatch, x) => {
+					const i = perPage * page + y * columnCount + x;
+					return <Square
+						key={i}
+						i={i}
+						y={side * y}
+						x={side * x}
+						swatch={swatch}
+						onClick={() => setCurrent(i)}
+						config={s.config}
+					/>;
+				})}
+			</>)}
 			
 			{page == pages.value.length - 1 && <circle
 				key="add"

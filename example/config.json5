@@ -8,6 +8,9 @@
 	
 	swatchesFile: 'data/swatches.json',
 	
+	blackL: 23.13,
+	whiteL: 84.22,
+	
 	bluecolorHost: '127.0.0.1',
 	bluecolorPort: 7474,
 	
