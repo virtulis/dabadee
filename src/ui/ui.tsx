@@ -113,6 +113,7 @@ export const App = (_props: {}) => {
 	const { columnCount, rowsPerPage } = s.config;
 	const perPage = columnCount * rowsPerPage;
 	const length = s.swatches.length;
+	const status = s.connected ? 'connected' : s.connecting ? 'connecting' : s.connected == false ? 'disconnected' : 'down';
 	
 	return <div class="app">
 	
@@ -128,7 +129,7 @@ export const App = (_props: {}) => {
 					|| false
 				}
 			>{cmd}</button>)}
-			<div>{s.connected ? 'connected' : s.connecting ? 'connecting' : s.connected == false ? 'disconnected' : 'down'}</div>
+			<div class={`status ${status}`}>{status}</div>
 			<div>{s.device_address}</div>
 			<div>{s.device_name}</div>
 			<div>{maybe(s.power_level, n => (n / 10).toFixed(1) + 'V')}</div>
